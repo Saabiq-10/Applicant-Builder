@@ -47,25 +47,6 @@ def filter_courses(job_desc, all_courses):
             ("ai" in c.get("tags", []) and is_ai) or
             ("python" in c.get("tags", []) and is_python)]
 
-def summarize_recommendations(teams, hackathons, courses):
-    def short(team, st):
-        return {
-            "name": f"{team['name']} – {st.get('name', 'Subteam')}",
-            "reason": st.get("reason", ""),
-            "url": team.get("url", "")
-        }
-
-    summarized_teams = []
-    for team in teams:
-        for st in team.get("subteams", []):
-            summarized_teams.append(short(team, st))
-
-    return {
-        "student_teams": summarized_teams[:5],
-        "hackathons": hackathons[:3],
-        "courses": courses[:3]
-    }
-
 def truncate_list(items, max_items=5, max_chars=1000):
     text_lines = []
     for item in items[:max_items]:
@@ -73,11 +54,8 @@ def truncate_list(items, max_items=5, max_chars=1000):
             text_lines.append(f"- {item.get('name', '')}: {item.get('reason', '')}")
         else:
             text_lines.append(str(item))
-
     text = '\n'.join(text_lines)
     return text[:max_chars]
-
-
 
 def build_prompt(job_desc, summary):
     student_teams = truncate_list(summary['student_teams'])
@@ -98,44 +76,40 @@ Top Hackathons:
 Top Courses:
 {courses}
 
-Return ONLY a valid JSON object with exactly these keys: "student_teams", "hackathons", and "courses".
+Return ONLY a valid JSON object with exactly these keys: \"student_teams\", \"hackathons\", and \"courses\".
 
 Each key must map to a list of objects with:
-- "name": string
-- "reason": 1-line reason it's relevant (string)
-- "url": a direct clickable link (string)
+- \"name\": string
+- \"reason\": 1-line reason it's relevant (string)
+- \"url\": a direct clickable link (string)
 
 End your response immediately after the final }}. Do not continue or add extra text.
 
 Example:
 
 {{
-  "student_teams": [
+  \"student_teams\": [
     {{
-      "name": "MetRocketry",
-      "reason": "Rocket design team that builds and launches rockets.",
-      "url": "https://example.com"
+      \"name\": \"MetRocketry\",
+      \"reason\": \"Rocket design team that builds and launches rockets.\",
+      \"url\": \"https://example.com\"
     }}
   ],
-  "hackathons": [
+  \"hackathons\": [
     {{
-      "name": "Lunaris Hacks",
-      "reason": "Large student-led hackathon in Canada.",
-      "url": "https://example.com"
+      \"name\": \"Lunaris Hacks\",
+      \"reason\": \"Large student-led hackathon in Canada.\",
+      \"url\": \"https://example.com\"
     }}
   ],
-  "courses": [
+  \"courses\": [
     {{
-      "name": "Intro to AI with Python",
-      "reason": "Harvard course teaching AI basics.",
-      "url": "https://example.com"
+      \"name\": \"Intro to AI with Python\",
+      \"reason\": \"Harvard course teaching AI basics.\",
+      \"url\": \"https://example.com\"
     }}
   ]
-}}
-If you cannot find any relevant matches, return empty lists. Your entire response MUST be a valid JSON object and nothing else.
-"""
-
-
+}}"""
 
 def extract_first_complete_json(text):
     start = text.find('{')
@@ -151,15 +125,6 @@ def extract_first_complete_json(text):
             if not stack:
                 return text[start:i+1]
     return None
-
-def summarize_recommendations(teams, hackathons, courses):
-    return {
-        "student_teams": teams,
-        "hackathons": hackathons,
-        "courses": courses
-    }
-
-
 
 def get_reasons_from_llm(job_desc, teams, hackathons, courses):
     def format_list(items):
@@ -183,20 +148,19 @@ Courses:
 Example:
 
 {{
-  "student_teams": {{
-    "Team A": "Reason for Team A",
-    "Team B": "Reason for Team B"
+  \"student_teams\": {{
+    \"Team A\": \"Reason for Team A\",
+    \"Team B\": \"Reason for Team B\"
   }},
-  "hackathons": {{
-    "Hackathon 1": "Reason for Hackathon 1"
+  \"hackathons\": {{
+    \"Hackathon 1\": \"Reason for Hackathon 1\"
   }},
-  "courses": {{
-    "Course X": "Reason for Course X"
+  \"courses\": {{
+    \"Course X\": \"Reason for Course X\"
   }}
 }}
 
-Respond with a JSON object only, in this format: ```json { ... } ```
-"""
+Respond with a JSON object only, in this format: ```json {{ ... }}```"""
 
     payload = {
         "model": "wizardlm-2-7b",
@@ -219,7 +183,6 @@ Respond with a JSON object only, in this format: ```json { ... } ```
     content = response.json()["choices"][0]["message"]["content"]
     content = re.sub(r"^```json|```$", "", content.strip())
 
-    # Print for debugging
     print("🔎 Raw LLM content:", content)
 
     try:
@@ -229,19 +192,21 @@ Respond with a JSON object only, in this format: ```json { ... } ```
         print("🔁 Raw content:", content)
         raise
 
-def extract_json(content: str):
-    # Try to extract JSON block from triple backticks
-    match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL)
-    if match:
-        return json.loads(match.group(1))
-
-    # Fallback: try to find first valid JSON object in text
-    match = re.search(r"(\{.*\})", content, re.DOTALL)
+def extract_json(content: str) -> dict:
     try:
-        return json.loads(match.group(1))
-    except Exception:
+        # Try to parse the whole content directly
+        return json.loads(content)
+    except json.JSONDecodeError:
+        # Try to find the largest JSON-looking block if direct parse fails
+        import re
+        json_pattern = re.compile(r'\{.*\}', re.DOTALL)
+        match = json_pattern.search(content)
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON found: {e}")
         raise ValueError("Could not find valid JSON block in LLM output. Full output:\n" + content)
-
 
 @app.route("/generate", methods=["POST"])
 def generate():
@@ -278,25 +243,20 @@ def generate():
 
     filtered_courses = filter_courses(jd, opportunities["courses"])
     top_hackathons = opportunities["hackathons"][:3]
-    # Prepare lists without reasons for LM input
+
     teams_no_reason = []
     for team in top_teams:
-        # each team has subteams, flatten subteams with team name combined for clarity
         for st in team.get("subteams", []):
             teams_no_reason.append({
             "name": f"{team['name']} – {st.get('name', 'Subteam')}",
             "url": team.get("url", "")
         })
 
-
     hackathons_no_reason = [{"name": h["name"], "url": h.get("url", "")} for h in top_hackathons]
     courses_no_reason = [{"name": c["name"], "url": c.get("url", "")} for c in filtered_courses]
 
-
-    # Call LM to get reasons only
     reasons = get_reasons_from_llm(jd, teams_no_reason, hackathons_no_reason, courses_no_reason)
 
-    # Merge reasons with original data (and real URLs)
     def merge_reasons(items, reasons_dict):
         merged = []
         for item in items:
@@ -309,12 +269,10 @@ def generate():
             })
         return merged
 
-
     student_teams_out = merge_reasons(teams_no_reason, reasons.get("student_teams", {}))
     hackathons_out = merge_reasons(hackathons_no_reason, reasons.get("hackathons", {}))
     courses_out = merge_reasons(courses_no_reason, reasons.get("courses", {}))
 
-    # Final JSON to return
     result = {
         "student_teams": student_teams_out,
         "hackathons": hackathons_out,
@@ -322,7 +280,6 @@ def generate():
     }
 
     return jsonify(result)
-
 
 if __name__ == "__main__":
     app.run(debug=True, port=3000)
