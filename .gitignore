@@ -9,6 +9,7 @@ backend/models/
 desktop.ini
 *.ini
 
+MK1_gpt_server.py
 MK2_gpt_server.py
 MK3_gpt_server.py
 MK4_gpt_server.py
