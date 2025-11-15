@@ -15,7 +15,7 @@ Applicant Builder reverses that process and brings opportunities directly to you
 It reads the description of your dream job and lists student teams, courses, and hackathons that match the skills employers look for.
 Each suggestion includes a link and a short reason why it fits, so you can act immediately.
 
-The main goal is **club discovery**, helping students find opportunities they might have missed.
+The main goal is **club discovery**, helping students find opportunities they might have missed and apply directly by clicking on one of the links.
 The secondary goal is **planning**, giving a clear path to build experience for specific roles.
 It makes getting involved simple, fast, and personal.
 
