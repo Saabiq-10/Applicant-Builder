@@ -3,14 +3,14 @@
 # Applicant Builder for LinkedIn
 
 An AI-powered Chrome extension that reads a job description and recommends student teams, upcoming hackathons, and online courses that build the skills in that job posting.
-The goal is to help engineering students take action fast instead of scrolling for hours to stay up to date with opportunities and guessing what to join.
+The goal is to help engineering students take action fast instead of relying on constant Instagram use or club fairs to stay up to date with opportunities and guessing what they should join.
 
 ---
 
 ## Purpose
 
 Most students want to join meaningful projects but spend too much time searching for the right ones.
-Applicant Builder reverses that process and brings opportunities directly to you.
+Applicant Builder reverses that process and brings opportunities directly to you, so you can start early and gain longer experience.
 
 It reads the description of your dream job and lists student teams, courses, and hackathons that match the skills employers look for.
 Each suggestion includes a link and a short reason why it fits, so you can act immediately.
