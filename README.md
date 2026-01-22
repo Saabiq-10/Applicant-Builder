@@ -25,7 +25,7 @@ It makes getting involved simple, fast, and personal.
 
 * Smart recommendations: Picks the most relevant TMU student teams, subteams, hackathons, and courses.
 * Context-aware matching: Uses SentenceTransformers embeddings to compare the job description with each opportunity.
-* Structured data sources: Pulls URLs and skill tags from `opportunities.json` and `teams_with_embeddings.json`, not from the language model.
+* Structured data sources: Pulls URLs and skill tags from `opportunities.json` and `teams_with_embeddings.json`.
 * Reliable backend: Flask server parses model output and fills gaps so the extension does not crash.
 * Clean UI: Each suggestion includes a short explanation under it so you understand why it matches that job.
 * Upcoming hackathons: Sorted by soonest date so you know what to sign up for next.
@@ -39,6 +39,7 @@ The panel on the right shows AI-generated recommendations for student teams, hac
 
 <img width="2000" height="1360" alt="Screenshot 2026-01-20 192406" src="https://github.com/user-attachments/assets/561fc004-ab29-4bb7-837e-76ae102b1d92" />
 <img width="2012" height="1360" alt="Screenshot 2026-01-20 192427" src="https://github.com/user-attachments/assets/51588f58-9d3d-432e-a526-c1ce60e5a53c" />
+<img width="2045" height="1358" alt="Screenshot 2026-01-21 231950" src="https://github.com/user-attachments/assets/95387784-65af-425d-af9a-1f04fc57c26a" />
 
 ---
 
