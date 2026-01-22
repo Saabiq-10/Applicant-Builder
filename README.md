@@ -37,8 +37,8 @@ It makes getting involved simple, fast, and personal.
 Below is a live example of the Chrome extension running on a real LinkedIn job post.  
 The panel on the right shows AI-generated recommendations for student teams, hackathons, and courses based on the job description.
 
-<img width="1961" height="1376" alt="Screenshot 2025-11-02 232635" src="https://github.com/user-attachments/assets/2cbca79e-ed69-4394-84f3-17a38973b27a" />
-<img width="1956" height="1380" alt="Screenshot 2025-11-02 232713" src="https://github.com/user-attachments/assets/d440d6fb-2217-4df2-93c1-4fa33ccc6d11" />
+<img width="2000" height="1360" alt="Screenshot 2026-01-20 192406" src="https://github.com/user-attachments/assets/561fc004-ab29-4bb7-837e-76ae102b1d92" />
+<img width="2012" height="1360" alt="Screenshot 2026-01-20 192427" src="https://github.com/user-attachments/assets/51588f58-9d3d-432e-a526-c1ce60e5a53c" />
 
 ---
 
