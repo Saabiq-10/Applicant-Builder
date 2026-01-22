@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
           };
 
           html += section("🛠️ Student Clubs", data.student_teams);
-          html += section("🎯 Upcoming Hackathons", data.hackathons);
+          html += section("🎯 Upcoming Competitions", data.hackathons);
           html += section("📚 Recommended Courses", data.courses);
 
           results.innerHTML = html || "No matches found.";

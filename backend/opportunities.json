@@ -74,6 +74,78 @@
       ]
     },
     {
+      "name": "MACH - TMU Liquid Rocketry",
+      "description": "Student team focused on liquid rocket engine development, avionics, and ground support systems.",
+      "url": "https://machtmu.com/",
+      "tags": ["aerospace", "rocketry", "liquid propulsion", "avionics", "controls", "embedded systems", "propulsion", "manufacturing", "test", "GSE", "fluids", "hardware"],
+      "subteams": [
+        {
+          "name": "Propulsion",
+          "focus": "Design, manufacturing, and testing of combustion chambers, injectors, nozzles, cooling systems, and full propellant and pneumatic ground support systems.",
+          "tags": ["propulsion", "combustion", "manufacturing", "thermodynamics", "fluid systems", "GSE", "pressurization", "mechanical"]
+        },
+        {
+          "name": "Telemetry and Control",
+          "focus": "Development and integration of data acquisition, telemetry, control systems, PLCs, networking hardware, and real-time system monitoring.",
+          "tags": ["controls", "telemetry", "PLC", "data acquisition", "networking", "automation", "embedded systems"]
+        },
+        {
+          "name": "Avionics",
+          "focus": "Design of flight electronics including custom PCBs, CAN bus systems, sensors, GPS, power systems, and fault protection modules.",
+          "tags": ["avionics", "PCB design", "CAN bus", "embedded systems", "electronics", "sensors", "firmware"]
+        }
+      ]
+    },
+    {
+      "name": "TMU Hyperloop",
+      "description": "Student engineering team developing a high-speed hyperloop transportation pod with integrated propulsion, control, and structural systems.",
+      "url": "https://methyperloop.netlify.app/",
+      "tags": ["transportation", "mechatronics", "controls", "propulsion", "structures", "systems engineering"],
+      "subteams": [
+        {
+          "name": "Guidance Navigation and Control",
+          "focus": "Development of onboard software, sensor fusion, safety logic, and system integration for stable and controlled pod operation.",
+          "tags": ["GNC", "controls", "software", "sensor fusion", "embedded systems", "robotics"]
+        },
+        {
+          "name": "Propulsion",
+          "focus": "Design and testing of linear induction motor systems including power electronics, magnetic modeling, and drive control.",
+          "tags": ["propulsion", "linear induction motor", "power electronics", "electromagnetics", "circuits"]
+        },
+        {
+          "name": "Structures",
+          "focus": "Mechanical design and manufacturing of chassis, aeroshell, braking systems, and vehicle dynamics components.",
+          "tags": ["structures", "mechanical design", "CAD", "manufacturing", "vehicle dynamics", "braking systems", "structural design", "engineering"]
+        },
+        {
+          "name": "Research and Development",
+          "focus": "Concept research, system-level architecture design, feasibility analysis, and long-term technology planning.",
+          "tags": ["R&D", "systems engineering", "concept design", "simulation", "technical research"]
+        }
+      ]
+    },
+    {
+      "name": "Toronto Metropolitan Aero Design (TMAD)",
+      "url": "https://tmetaero.space/",
+      "subteams": [
+        {
+          "name": "Aerostructures",
+          "focus": ["aerospace structures", "composites", "structural design", "manufacturing", "lightweight structures", "catia"],
+          "tags": ["aerospace", "aircraft", "manufacturing", "airframe", "catia"]
+        },
+        {
+          "name": "Flight Mechanics & Avionics",
+          "focus": ["flight dynamics", "control systems", "avionics", "sensor integration"],
+          "tags": ["aerospace", "controls", "embedded"]
+        },
+        {
+          "name": "CAD & Prototyping",
+          "focus": ["catia","cad modeling", "stress analysis", "rapid prototyping", "cad"],
+          "tags": ["catia", "design", "manufacturing", "aerospace", "aircraft", "cad"]
+        }
+      ]
+    },
+    {
       "name": "MARS Competition",
       "description": "Hands-on rocket design and launch competition focused on avionics, embedded systems, and aerospace engineering. Participants work on miniaturized rockets with custom flight computers and telemetry systems.",
       "url": "https://marstmu.com/MARS-Competition/links-and-resources/",
@@ -230,6 +302,12 @@
     }
   ],
   "courses": [
+    {
+      "name": "Learn C++",
+      "url": "https://www.learncpp.com/",
+      "tags": ["c++", "software"],
+      "description": "A free resource for learning C++ programming from the ground up. Covers basics to advanced topics with practical examples and exercises."
+    },
     {
       "name": "Using Python for Research",
       "url": "https://www.edx.org/learn/python/harvard-university-using-python-for-research",

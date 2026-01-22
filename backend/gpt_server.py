@@ -17,34 +17,50 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 with open(os.path.join(here, "teams_with_embeddings.json"), "r", encoding="utf-8") as f:
     opportunities = json.load(f)
 
-# Create lookup from subteam full names to URLs
+
+# URL lookup map
+
 opportunities_lookup = {}
+
 for team in opportunities["student_teams"]:
     for sub in team.get("subteams", []):
         if not isinstance(sub, dict):
-            logging.warning(f"Skipping malformed subteam in {team['name']}: {sub}")
             continue
         full_name = f"{team['name']} – {sub.get('name', 'Subteam')}"
         opportunities_lookup[full_name] = {"url": team.get("url", "")}
 
 
-def compute_score(subteam, job_embedding, required_skills, required_tools):
-    try:
-        subteam_embedding = np.array(subteam["embedding"]).reshape(1, -1)
-        sim = cosine_similarity(job_embedding, subteam_embedding)[0][0]
-    except Exception:
-        return 0.0
-    skills = set(subteam.get("skills", []))
-    tools = set(subteam.get("tools", []))
-    skill_overlap = len(skills & required_skills) / max(len(required_skills), 1)
-    tool_match = len(tools & required_tools) / max(len(required_tools), 1)
-    return 0.5 * sim + 0.3 * skill_overlap + 0.2 * tool_match
+ 
+# Scoring
+ 
 
+def compute_score(subteam, job_embedding, job_text):
+    try:
+        sub_emb = np.array(subteam["embedding"]).reshape(1, -1)
+        sim = cosine_similarity(job_embedding, sub_emb)[0][0]
+    except Exception:
+        sim = 0.0
+
+    tags = set(map(str.lower, subteam.get("tags", [])))
+
+    bonus = 0
+    for t in tags:
+        if t in job_text:
+            bonus += 0.02
+
+    return sim + bonus
+
+
+
+# Courses filter
+ 
 
 def filter_courses(job_desc, all_courses):
     jd_lower = job_desc.lower()
+
     is_ai = any(k in jd_lower for k in ["artificial intelligence", "ai", "machine learning", "ml", "deep learning"])
-    is_python = any(k in jd_lower for k in ["python", "programming", "developer"])
+    is_python = "python" in jd_lower
+
     return [
         c for c in all_courses if
         ("ai" in c.get("tags", []) and is_ai) or
@@ -52,129 +68,154 @@ def filter_courses(job_desc, all_courses):
     ]
 
 
-def truncate_list(items, max_items=5, max_chars=1000):
-    lines = [f"- {item.get('name', '')}: {item.get('reason', '')}" for item in items[:max_items]]
-    return '\n'.join(lines)[:max_chars]
-
-
-def build_prompt(job_desc, summary):
-    return f"""You are an assistant recommending opportunities based on the following job description:
-
-Job Description:
-{job_desc}
-
-Top Matching Student Clubs:
-{truncate_list(summary['student_teams'])}
-
-Top Hackathons:
-{truncate_list(summary['hackathons'])}
-
-Top Courses:
-{truncate_list(summary['courses'])}
-
-Return ONLY a valid JSON object with exactly these keys: "student_teams", "hackathons", and "courses".
-
-Each item must include:
-- "name": string
-- "reason": 1-line string
-- "url": clickable link (string)
-
-End your response after the final }}. Do not add extra text.
-"""
-
+ 
+# JSON extraction
+ 
 
 def extract_json(content: str) -> dict:
+    content = content.strip().replace("```json", "").replace("```", "")
+
     try:
         return json.loads(content)
     except json.JSONDecodeError:
-        match = re.search(r'\{.*\}', content, re.DOTALL)
+        match = re.search(r'\{[\s\S]*\}', content)
         if match:
-            try:
-                return json.loads(match.group(0))
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Partial JSON parse failed: {e}")
+            return json.loads(match.group(0))
         raise ValueError("No valid JSON found")
 
 
-def get_reasons_from_llm(job_desc, teams, hackathons, courses):
-    def fmt(items): return "\n".join(f"- {x['name']}" for x in items)
+ 
+# LLM reasoning
+ 
 
-    prompt = f"""You are an assistant. Based on this job description:
+def get_reasons_from_llm(job_desc, teams, hackathons, courses):
+    def fmt(items):
+        lines = []
+        for x in items:
+            meta = []
+            if "tags" in x:
+                meta.extend(x["tags"])
+            if "focus" in x:
+                meta.append(x["focus"])
+
+            meta_str = " | ".join(meta[:5])
+
+            lines.append(f"- {x['name']} ({meta_str})")
+
+        return "\n".join(lines)
+
+
+    prompt = f"""
+Based on this job description:
 
 {job_desc}
 
-Explain briefly why each of these are relevant.
+Explain briefly why each item is relevant.
 
 Student Teams:
 {fmt(teams)}
+
 Hackathons:
 {fmt(hackathons)}
+
 Courses:
 {fmt(courses)}
 
-Respond in this JSON format:
-```json
+Respond ONLY with valid JSON.
+
+Use the exact names provided.
+
+Format strictly as:
+
 {{
   "student_teams": {{
-    "Name 1": "Reason",
-    ...
+    "TEAM NAME HERE": "One sentence reason"
   }},
   "hackathons": {{
-    ...
+    "HACKATHON NAME HERE": "One sentence reason"
   }},
   "courses": {{
-    ...
+    "COURSE NAME HERE": "One sentence reason"
   }}
 }}
-```"""
 
-    try:
-        res = requests.post(
-            "http://127.0.0.1:1234/v1/chat/completions",
-            headers={"Content-Type": "application/json"},
-            json={
-                "model": "wizardlm-2-7b",
-                "messages": [
-                    {"role": "system", "content": "You explain why each opportunity is relevant."},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.3,
-                "max_tokens": 2048
-            },
-            timeout=30
-        )
-        res.raise_for_status()
-        raw = res.json()["choices"][0]["message"]["content"]
-        cleaned = re.sub(r"^```json|```$", "", raw.strip())
-        return extract_json(cleaned)
-    except Exception as e:
-        logging.error(f"LLM request failed: {e}")
-        raise
+Do not return arrays.
+Every name listed MUST appear as a key in the JSON.
+If you skip any item the response is invalid.
+Return a reason for every entry even if brief.
 
+
+"""
+
+
+    res = requests.post(
+        "http://127.0.0.1:1234/v1/chat/completions",
+        headers={"Content-Type": "application/json"},
+        json={
+            "model": "wizardlm-2-7b",
+            "messages": [
+                {"role": "system", "content": "You explain why each opportunity is relevant."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 2048
+        },
+        timeout=30
+    )
+
+    res.raise_for_status()
+    raw = res.json()["choices"][0]["message"]["content"]
+    return extract_json(raw)
+
+
+ 
+# Main route
+ 
 
 @app.route("/generate", methods=["POST"])
 def generate():
     jd = request.get_json(force=True).get("prompt", "").strip()
+
     if not jd:
         return jsonify({"error": "No job description provided"}), 400
 
     job_vec = model.encode(jd).reshape(1, -1)
-    required_skills = {w for w in jd.lower().split() if w in {"robotics", "design", "integration", "autonomous"}}
-    required_tools = {w for w in jd.lower().split() if w in {"python", "cad", "ros", "c++", "solidworks"}}
+
+
+    SKILL_KEYWORDS = {
+        "integration", "design", "testing", "manufacturing",
+        "process", "quality", "planning", "structures",
+        "electrical", "mechanical", "project", "management"
+    }
+
+    TOOL_KEYWORDS = {"python", "cad", "ros", "c++", "solidworks", "catia", "fusion360"}
+
+
+    jd_lower = jd.lower()
+
 
     top_teams = []
+
     for team in opportunities["student_teams"]:
         scored = [
-            (compute_score(st, job_vec, required_skills, required_tools), st)
-            for st in team.get("subteams", []) if isinstance(st, dict) and "embedding" in st
+            (
+                compute_score(st, job_vec, jd_lower),
+                st
+            )
+            for st in team.get("subteams", [])
+            if isinstance(st, dict) and "embedding" in st
         ]
+
         if scored:
             scored.sort(reverse=True)
-            top_teams.append((scored[0][0], {
-                "name": team["name"],
-                "url": team.get("url", ""),
-                "subteams": [st for _, st in scored[:2]]
-            }))
+            top_teams.append((
+                scored[0][0],
+                {
+                    "name": team["name"],
+                    "url": team.get("url", ""),
+                    "subteams": [st for _, st in scored[:2]]
+                }
+            ))
 
     top_teams.sort(reverse=True)
     top_teams = [t for _, t in top_teams[:3]]
@@ -182,10 +223,11 @@ def generate():
     hackathons = opportunities["hackathons"][:3]
     courses = filter_courses(jd, opportunities["courses"])
 
-    # Flatten subteams into individual items with full names
     team_items = [{
         "name": f"{team['name']} – {sub.get('name', 'Subteam')}",
-        "url": team.get("url", "")
+        "url": team.get("url", ""),
+        "tags": sub.get("tags", []),
+        "focus": sub.get("focus", "")
     } for team in top_teams for sub in team.get("subteams", [])]
 
     hackathon_items = [{"name": h["name"], "url": h.get("url", "")} for h in hackathons]
@@ -193,20 +235,42 @@ def generate():
 
     try:
         reasons = get_reasons_from_llm(jd, team_items, hackathon_items, course_items)
-    except Exception:
-        return jsonify({"error": "Failed to fetch LLM reasons"}), 500
+    except Exception as e:
+        logging.error(e)
+        return jsonify({"error": "LLM failure"}), 500
 
-    def with_reasons(items, reason_map):
-        return [{
-            "name": x["name"],
-            "reason": reason_map.get(x["name"], "Relevant opportunity."),
-            "url": x.get("url") or opportunities_lookup.get(x["name"], {}).get("url", "")
-        } for x in items]
+    def with_reasons(items, reason_data):
+        out = []
+
+        for idx, x in enumerate(items):
+            name = x["name"]
+
+            reason = None
+
+            if isinstance(reason_data, dict):
+                reason = reason_data.get(name)
+
+            elif isinstance(reason_data, list):
+                if idx < len(reason_data):
+                    reason = reason_data[idx]
+
+            if not reason:
+                raise ValueError(f"LLM missing reason for: {name}")
+
+            out.append({
+                "name": name,
+                "reason": reason,
+                "url": x.get("url") or opportunities_lookup.get(name, {}).get("url", "")
+            })
+
+
+        return out
+
 
     return jsonify({
-        "student_teams": with_reasons(team_items, reasons.get("student_teams", {})),
-        "hackathons": with_reasons(hackathon_items, reasons.get("hackathons", {})),
-        "courses": with_reasons(course_items, reasons.get("courses", {}))
+        "student_teams": with_reasons(team_items, reasons.get("student_teams", [])),
+        "hackathons": with_reasons(hackathon_items, reasons.get("hackathons", [])),
+        "courses": with_reasons(course_items, reasons.get("courses", []))
     })
 
 
